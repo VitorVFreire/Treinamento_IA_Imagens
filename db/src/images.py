@@ -7,7 +7,7 @@ from PIL import Image
 from io import BytesIO
 
 
-class ImageProcessor:
+class ImageProcessor():
     def __init__(self, cx, key, base_path, parametros, num_images=10):
         self.cx = cx
         self.key = key
