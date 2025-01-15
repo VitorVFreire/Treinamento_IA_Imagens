@@ -6,12 +6,46 @@ from filecmp import cmp as compare
 from itertools import combinations
 from networkx import Graph, connected_components
 from concurrent.futures import ThreadPoolExecutor
+import cv2
+import re
 
 class Files():
     def __init__(self, path):
         self.path = path
         self.paths = []
         self.files = []
+        self.new_files = []
+        self.max_number = 0
+        self.names = []
+
+    def load_names(self):
+        self.paths = [path for path in os.listdir(self.path) if os.path.isdir(os.path.join(self.path, path))]
+        for path in self.paths:
+            self.names.append(re.split("/", path, 1)[0])
+
+    def __find_max_number_in_files(self):
+        regex = r'(\d+)'  # Captura números em qualquer parte do nome do arquivo
+        
+        max_num = 0
+        for file in self.files:
+            match = re.findall(regex, os.path.basename(file))
+            if match:
+                numbers = map(int, match)  # Converte os números encontrados para inteiros
+                max_num = max(max_num, max(numbers))  # Atualiza o maior número encontrado
+        
+        self.max_number = max_num
+
+    def check_number_before_dot(self):
+        self.__find_max_number_in_files()
+        regex = r'(\d+)\.'  # Expressão regular para capturar números antes do ponto.
+
+        for file in self.files:
+            # Extrai o número antes do ponto no nome do arquivo.
+            match = re.search(regex, os.path.basename(file))
+            if match:
+                file_number = int(match.group(1))
+                if file_number > self.max_number and not ('FLIP' in file or 'ROTATED' in file):
+                    self.new_files.append(file)
         
     def __get_paths(self):
         """Recupera os diretórios dentro do diretório principal."""
@@ -84,6 +118,56 @@ class Files():
         with ThreadPoolExecutor() as executor:
             executor.map(self.__rm_background, self.files)
 
+    def flip_images(self):
+        for path_file in self.new_files:
+            try:
+                # Carrega a imagem usando OpenCV
+                img = cv2.imread(path_file)
+                if img is None:
+                    print(f"Erro ao carregar a imagem: {path_file}")
+                    continue
+                
+                # Realiza o flip horizontal
+                flipped_img = cv2.flip(img, 1)
+                
+                # Salva a imagem invertida
+                flipped_path = os.path.join(os.path.dirname(path_file), f'FLIP_{os.path.basename(path_file)}')
+                cv2.imwrite(flipped_path, flipped_img)
+            except Exception as e:
+                print(f"Erro ao processar a imagem {path_file}: {e}")
+    
+    def rotate_images(self):
+        angles = [15, 30, 45, 60]
+        for path_file in self.new_files:
+            try:
+                # Carrega a imagem usando OpenCV
+                img = cv2.imread(path_file)
+                if img is None:
+                    print(f"Erro ao carregar a imagem: {path_file}")
+                    continue
+                
+                # Obtém as dimensões da imagem
+                height, width = img.shape[:2]
+                center = (width // 2, height // 2)
+                
+                for angle in angles:
+                    # Cria a matriz de rotação
+                    rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
+                    
+                    # Aplica a rotação
+                    rotated_img = cv2.warpAffine(img, rotation_matrix, (width, height))
+                    
+                    # Define o nome do arquivo de saída
+                    rotated_path = os.path.join(
+                        os.path.dirname(path_file),
+                        f'ROTATED_{angle}_{os.path.basename(path_file)}'
+                    )
+                    
+                    # Salva a imagem rotacionada
+                    cv2.imwrite(rotated_path, rotated_img)
+            except Exception as e:
+                print(f"Erro ao processar a imagem {path_file}: {e}")
+
     def run(self):
         self.__get_paths()
         self.__get_files()
@@ -97,6 +181,18 @@ class Files():
         self.files.clear()
         self.__get_files()
 
-        print("Removendo fundo das imagens...")
-        self.rm_background_files()
+        print("Flipando arquivos...")
+        self.flip_images()
+
+        self.files.clear()
+        self.__get_files()
+        
+        print("Rotacionando arquivos...")
+        self.rotate_images()
+
+        print("Removendo arquivos duplicados...")
+        self.files.clear()
+        self.__get_files()
+        self.delete_files()
+
         print("Processamento concluído!")

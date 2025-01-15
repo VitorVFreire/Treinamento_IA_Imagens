@@ -20,7 +20,6 @@ def rm_background(path_file):
 
 # Função para carregar e preparar a imagem
 def prepare_image(img_path):
-    rm_background(img_path)
     # Carregar a imagem
     img = image.load_img(img_path, target_size=img_size)
     # Converter para um array numpy

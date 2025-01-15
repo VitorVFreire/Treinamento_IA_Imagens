@@ -15,7 +15,7 @@ dataset_path = "db/images"
 # Parâmetros
 img_size = (150, 150)  # Tamanho das imagens
 batch_size = 32  # Tamanho do lote
-epochs = 10  # Número de épocas para o treinamento
+epochs = 32  # Número de épocas para o treinamento
 
 # Criação de geradores de imagens com aumento de dados
 datagen = ImageDataGenerator(

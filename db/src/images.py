@@ -19,8 +19,11 @@ class ImageProcessor():
         """Lista a maior imagem salva para cada tipo de animal"""
         arquivos = []
         caminhos = [os.path.join(self.base_path, nome) for nome in os.listdir(self.base_path)]
+        
         for caminho in caminhos:
-            arquivos.extend([nome for nome in os.listdir(caminho)])
+            # Ignora arquivos .gitkeep e continua com diretórios
+            if os.path.isdir(caminho):  # Garante que é um diretório
+                arquivos.extend([nome for nome in os.listdir(caminho) if nome != '.gitkeep'])
 
         maior_por_animal = {}
         regex = re.compile(r'(\w+)_(\d+)\.jpg')
@@ -42,7 +45,7 @@ class ImageProcessor():
             "cx": self.cx,
             "key": self.key,
             "searchType": "image",
-            "num": self.num_images,
+            "num": 10,
             "start": start
         }
         response = requests.get(search_url, params=params)

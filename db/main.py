@@ -14,8 +14,8 @@ if __name__ == '__main__':
     base_path = os.path.join('db', 'images')
 
     # Inicializar o processador de imagens
-    #image_processor = ImageProcessor(cx, key, base_path, parametros, num_images=10)
-    #image_processor.run()
+    image_processor = ImageProcessor(cx, key, base_path, parametros, num_images=30)
+    image_processor.run()
 
     files = Files(base_path)
     files.run()
