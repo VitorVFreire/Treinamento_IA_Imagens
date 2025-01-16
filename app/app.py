@@ -1,70 +1,24 @@
-import os
-import numpy as np
-import tensorflow as tf
 from tensorflow.keras.models import load_model
-from PIL import Image, UnidentifiedImageError
-import matplotlib.pyplot as plt
-from db import Files
-from app import prepare_image
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+import numpy as np
 
-# Definindo o caminho para o modelo treinado
-model_path = 'model/identificador_animal.h5'
-
+img_height, img_width = 150, 150
 # Carregar o modelo treinado
-model = load_model(model_path)
+model = load_model('model/my_model.keras')
 
-# Carregar as imagens da pasta
-files = Files('app/images')
-files.get_only_files()
+# Função para prever uma imagem
+def predict_image(image_path, model, img_height, img_width):
+    img = load_img(image_path, target_size=(img_height, img_width))
+    img_array = img_to_array(img) / 255.0  # Normalizar
+    img_array = np.expand_dims(img_array, axis=0)
 
-# Classes do modelo
-names = Files('db/images')
-names.load_names()
-names.names.sort()
-class_names = names.names
+    prediction = model.predict(img_array)
+    if prediction[0] > 0.5:
+        return "Dog", prediction[0]
+    else:
+        return "Cat", prediction[0]
 
-# Listas para armazenar imagens e classificações
-images = []
-labels = []
-
-# Processar cada imagem
-for path_file in files.files:
-    try:
-        # Carregar a imagem
-        im = Image.open(path_file)
-
-        # Preparar a imagem para o modelo
-        img_array = prepare_image(path_file)
-
-        # Fazer a previsão
-        predictions = model.predict(img_array)
-        predicted_class = np.argmax(predictions, axis=1)
-
-        # Obter o rótulo previsto
-        predicted_label = class_names[predicted_class[0]]
-
-        # Armazenar a imagem e o rótulo
-        images.append(im)
-        labels.append(predicted_label)
-    except UnidentifiedImageError:
-        print(f"Erro: {path_file} não é uma imagem válida.")
-    except Exception as e:
-        print(f"Ocorreu um erro ao processar {path_file}: {str(e)}")
-
-# Exibir todas as imagens com suas classificações
-if images:
-    num_images = len(images)
-    cols = 4
-    rows = (num_images + cols - 1) // cols
-
-    plt.figure(figsize=(15, rows * 5))
-    for i, (im, label) in enumerate(zip(images, labels)):
-        plt.subplot(rows, cols, i + 1)
-        plt.imshow(im)
-        plt.title(f"Classificação: {label}", fontsize=12)
-        plt.axis('off')
-
-    plt.tight_layout()
-    plt.show()
-else:
-    print("Nenhuma imagem válida foi processada.")
+# Exemplo de previsão
+image_path = "app/images/gato.png"
+label, confidence = predict_image(image_path, model, img_height, img_width)
+print(f"Predição: {label} com confiança de {confidence}")

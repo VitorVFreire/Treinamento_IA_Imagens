@@ -1,4 +1,5 @@
 import os
+import random
 import re
 import threading
 import requests
@@ -14,6 +15,7 @@ class ImageProcessor():
         self.base_path = base_path
         self.parametros = parametros
         self.num_images = num_images
+        self.paths = ['test', 'validation']
 
     def list_imagens_saved(self):
         """Lista a maior imagem salva para cada tipo de animal"""
@@ -72,11 +74,13 @@ class ImageProcessor():
 
     def process_images(self, parametro, start_position):
         """Processa o download das imagens para um parâmetro específico"""
-        path = os.path.join(self.base_path, parametro)
-        os.makedirs(path, mode=0o777, exist_ok=True)
-
         image_links = []
         for start in range(start_position, start_position + self.num_images, 10):
+            indice_random = random.randrange(0,2)
+            base_path = f'{self.base_path}/{self.paths[indice_random]}/{parametro}'
+            
+            path = os.path.join(base_path, parametro)
+            os.makedirs(path, mode=0o777, exist_ok=True)
             image_links.extend(self.search_google_images(parametro, start=start))
 
         download_threads = []

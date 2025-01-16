@@ -1,77 +1,70 @@
-import os
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras import layers, models
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 
-def count_class(base_path) -> int:
-    caminhos = [os.path.join(base_path, nome) for nome in os.listdir(base_path)]
-    return len(caminhos)-1
+def train_ai(target, train_dir, val_dir, batch_size, img_height, img_width):
+    # Geradores de Dados
+    train_datagen = ImageDataGenerator(rescale=1.0/255.0)
+    val_datagen = ImageDataGenerator(rescale=1.0/255.0)
 
-# Definindo o caminho para o dataset
-dataset_path = "db/images"
+    train_generator = train_datagen.flow_from_directory(
+        train_dir,
+        target_size=(img_height, img_width),
+        batch_size=batch_size,
+        class_mode='binary'  # Aqui definimos como binário
+    )
+
+    val_generator = val_datagen.flow_from_directory(
+        val_dir,
+        target_size=(img_height, img_width),
+        batch_size=batch_size,
+        class_mode='binary'  # Aqui também definimos como binário
+    )
+
+    # Modelo de Rede Neural
+    model = Sequential([
+        Conv2D(32, (3, 3), activation='relu', input_shape=(img_height, img_width, 3)),
+        MaxPooling2D(2, 2),
+        Conv2D(64, (3, 3), activation='relu'),
+        MaxPooling2D(2, 2),
+        Conv2D(128, (3, 3), activation='relu'),
+        MaxPooling2D(2, 2),
+        Flatten(),
+        Dense(128, activation='relu'),
+        Dropout(0.5),
+        Dense(1, activation='sigmoid')  # Saída binária com sigmoid
+    ])
+
+    # Compilação do Modelo
+    model.compile(
+        optimizer='adam',
+        loss='binary_crossentropy',  # Função de perda binária
+        metrics=['accuracy']
+    )
+
+    # Treinamento
+    history = model.fit(
+        train_generator,
+        steps_per_epoch=train_generator.samples // batch_size,
+        validation_data=val_generator,
+        validation_steps=val_generator.samples // batch_size,
+        epochs=10
+    )
+
+    # Salvar o modelo treinado
+    model.save('model/my_model.keras')
+
+    # Avaliar no conjunto de validação
+    val_loss, val_accuracy = model.evaluate(val_generator)
+    print(f"Validação - Perda: {val_loss}, Acurácia: {val_accuracy}")
+
+# Caminhos para os diretórios
+train_dir = "images/train"
+val_dir = "images/validation"
 
 # Parâmetros
-img_size = (150, 150)  # Tamanho das imagens
-batch_size = 32  # Tamanho do lote
-epochs = 32  # Número de épocas para o treinamento
+img_height, img_width = 150, 150
+batch_size = 32
 
-# Criação de geradores de imagens com aumento de dados
-datagen = ImageDataGenerator(
-    rescale=1.0/255,  # Normalização das imagens
-    validation_split=0.2  # Usar 20% para validação
-)
-
-# Gerador para o conjunto de treinamento
-train_generator = datagen.flow_from_directory(
-    dataset_path,
-    target_size=img_size,
-    batch_size=batch_size,
-    class_mode="categorical",
-    subset="training"  # Usar apenas a parte do treinamento
-)
-
-# Gerador para o conjunto de validação
-validation_generator = datagen.flow_from_directory(
-    dataset_path,
-    target_size=img_size,
-    batch_size=batch_size,
-    class_mode="categorical",
-    subset="validation"  # Usar a parte de validação
-)
-
-# Construção do modelo
-model = models.Sequential([
-    layers.Conv2D(32, (3, 3), activation="relu", input_shape=(img_size[0], img_size[1], 3)),
-    layers.MaxPooling2D((2, 2)),
-    layers.Conv2D(64, (3, 3), activation="relu"),
-    layers.MaxPooling2D((2, 2)),
-    layers.Conv2D(128, (3, 3), activation="relu"),
-    layers.MaxPooling2D((2, 2)),
-    layers.Flatten(),
-    layers.Dense(128, activation="relu"),
-    layers.Dense(count_class(dataset_path), activation="softmax") 
-])
-
-# Compilando o modelo
-model.compile(optimizer=Adam(), loss="categorical_crossentropy", metrics=["accuracy"])
-
-# Early stopping para evitar overfitting
-early_stopping = EarlyStopping(monitor="val_loss", patience=3)
-
-# Treinamento do modelo
-history = model.fit(
-    train_generator,
-    steps_per_epoch=train_generator.samples // batch_size,
-    epochs=epochs,
-    validation_data=validation_generator,
-    validation_steps=validation_generator.samples // batch_size,
-    callbacks=[early_stopping]
-)
-
-# Salvando o modelo treinado
-model.save('model/identificador_animal.h5')
-
-# Resumo do treinamento
-print(f"Treinamento finalizado com {history.history['accuracy'][-1]*100:.2f}% de precisão.")
+train_ai('dog', train_dir, val_dir, batch_size, img_height, img_width)

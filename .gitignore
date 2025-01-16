@@ -4,3 +4,4 @@ db/images/*
 app/images/*
 model/*
 !.gitkeep
+images/
