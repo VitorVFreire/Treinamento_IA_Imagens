@@ -10,12 +10,12 @@ if __name__ == '__main__':
     key = os.getenv('API_KEY')
 
     # Parâmetros de busca
-    parametros = ['cat', 'dog']
+    parametros = ['cat', 'dog', 'horse', 'fish']
     
     base_path = os.path.join('db', 'images')
 
     # Inicializar o processador de imagens
-    #image_processor = ImageProcessor(cx, key, base_path, parametros, num_images=50)
+    #image_processor = ImageProcessor(cx, key, base_path, parametros, num_images=500)
     #image_processor.run()
 
     files = Files(base_path)

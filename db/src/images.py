@@ -15,7 +15,7 @@ class ImageProcessor():
         self.base_path = base_path
         self.parametros = parametros
         self.num_images = num_images
-        self.paths = ['test', 'validation']
+        self.paths = ['train', 'validation']
 
     def list_imagens_saved(self):
         """Lista a maior imagem salva para cada tipo de animal"""
@@ -73,19 +73,32 @@ class ImageProcessor():
             print(f"Erro ao baixar/converter a imagem de {url}: {e}")
 
     def process_images(self, parametro, start_position):
-        """Processa o download das imagens para um parâmetro específico"""
+        """Processa o download das imagens para um parâmetro específico, balanceando entre train e validation"""
         image_links = []
-        for start in range(start_position, start_position + self.num_images, 10):
-            indice_random = random.randrange(0,2)
-            base_path = f'{self.base_path}/{self.paths[indice_random]}/{parametro}'
-            
-            path = os.path.join(base_path, parametro)
-            os.makedirs(path, mode=0o777, exist_ok=True)
+        count_loop = (self.num_images / 10)
+
+        # Proporção para distribuir imagens entre train e validation
+        num_validation = int(self.num_images * 0.5)  # 50% para validation
+        num_train = self.num_images - num_validation  # Restante para train
+
+        # Lista aleatória de destinos balanceados
+        destinations = ['validation'] * num_validation + ['train'] * num_train
+        random.shuffle(destinations)
+
+        for i, start in enumerate(range(start_position, start_position + self.num_images, 10)):
             image_links.extend(self.search_google_images(parametro, start=start))
 
         download_threads = []
         for idx, link in enumerate(image_links):
-            file_path = os.path.join(path, f"{parametro}_{idx + start_position}.jpg")
+            if idx >= len(destinations):
+                break
+
+            # Define o destino balanceado
+            destination = destinations[idx]
+            base_path = f'{self.base_path}/{destination}/{parametro}/{parametro}'
+            os.makedirs(base_path, mode=0o777, exist_ok=True)
+
+            file_path = os.path.join(base_path, f"{parametro}_{idx + start_position}.jpg")
             thread = threading.Thread(target=self.download_and_convert_image, args=(link, file_path))
             download_threads.append(thread)
             thread.start()
