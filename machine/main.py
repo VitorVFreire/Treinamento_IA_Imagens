@@ -1,101 +1,60 @@
-import tensorflow as tf
+from keras.models import Sequential, load_model
+from keras.layers import Conv2D, MaxPooling2D, Flatten
+from keras.layers import Dense
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
-from db import Files
+from numpy import expand_dims, argmax
 import time
+from tensorflow.keras.optimizers import Adam
 
-def train_ai(target, train_dir, val_dir, batch_size, img_height, img_width):
-    # Geradores de Dados com Augmentação
-    train_datagen = ImageDataGenerator(
-        rescale=1.0/255.0,
-        rotation_range=20,
-        width_shift_range=0.2,
-        height_shift_range=0.2,
-        shear_range=0.2,
-        zoom_range=0.2,
-        horizontal_flip=True,
-        fill_mode='nearest'
-    )
-    val_datagen = ImageDataGenerator(rescale=1.0/255.0)
+def train_ai(path, imgW, imgH, batch_size, epochs):
+    trainImgs = ImageDataGenerator(
+        rescale = 1./255, shear_range = 0.2, 
+        zoom_range = 0.2, horizontal_flip = True)
+    testImgs = ImageDataGenerator(rescale = 1./255)
 
-    # Gerador de Dados de Treinamento
-    train_generator = train_datagen.flow_from_directory(
-        train_dir,
-        target_size=(img_height, img_width),
-        batch_size=batch_size,
-        class_mode='binary',  # Usando classificação binária
-    )
+    train = trainImgs.flow_from_directory(
+            path + '/train', target_size = (imgW, imgH),
+            batch_size = batch_size, class_mode = 'categorical')
+    test = testImgs.flow_from_directory(
+            path + '/test', target_size = (imgW, imgH),
+            batch_size = batch_size, class_mode = 'categorical')
 
-    # Gerador de Dados de Validação
-    val_generator = val_datagen.flow_from_directory(
-        val_dir,
-        target_size=(img_height, img_width),
-        batch_size=batch_size,
-        class_mode='binary',  # Usando classificação binária
-    )
+    classes = list(train.class_indices.keys())
 
-    # Modelo de Rede Neural
-    model = Sequential([
-        Conv2D(32, (3, 3), activation='relu', input_shape=(img_height, img_width, 3)),
-        MaxPooling2D(2, 2),
-        Conv2D(64, (3, 3), activation='relu'),
-        MaxPooling2D(2, 2),
-        Conv2D(128, (3, 3), activation='relu'),
-        MaxPooling2D(2, 2),
-        Flatten(),
-        Dense(128, activation='relu'),
-        Dropout(0.5),
-        Dense(1, activation='sigmoid')  # Saída binária com sigmoid
-    ])
+    cnn = Sequential()
 
-    # Compilação do Modelo
-    model.compile(
-        optimizer='adam',
-        loss='binary_crossentropy',  # Função de perda binária
-        metrics=['accuracy']
-    )
+    cnn.add(Conv2D(
+            32, (3, 3), input_shape = (imgW, imgH, 3),
+            activation = 'relu'))  # Ajuste do kernel
+    cnn.add(MaxPooling2D(
+            pool_size = (2, 2)))  # Ajuste do downscale
+    cnn.add(Conv2D(
+            64, (3, 3), activation = 'relu'))
+    cnn.add(MaxPooling2D(
+            pool_size = (2, 2)))  # Ajuste do downscale
+    cnn.add(Flatten())
 
-    # Callbacks para interrupção antecipada e checkpoint de modelo
-    early_stopping = EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
-    checkpoint = ModelCheckpoint(f'model/{target}_binary_best.keras', save_best_only=True, monitor='val_loss', mode='min')
+    cnn.add(Dense(
+        units = 128, activation = 'relu'))
+    cnn.add(Dense(
+            units = len(classes), activation = 'softmax'))
+    cnn.compile(
+            optimizer = 'adam',
+            loss = 'categorical_crossentropy',
+            metrics = ['accuracy'])
+    
+    cnn.fit(
+        train, epochs = epochs, 
+        validation_data = test, validation_steps = 512)
 
-    # Treinamento do Modelo (sem workers e multiprocessamento diretamente)
-    history = model.fit(
-        train_generator,
-        steps_per_epoch=train_generator.samples // batch_size,
-        validation_data=val_generator,
-        validation_steps=val_generator.samples // batch_size,
-        epochs=20,  # Número de épocas ajustado para 20
-        callbacks=[early_stopping, checkpoint]
-    )
-
-    # Salvar o modelo final após o treinamento
-    model.save(f'model/{target}_binary_final.keras')
-
-    # Avaliar o modelo no conjunto de validação
-    val_loss, val_accuracy = model.evaluate(val_generator)
-    print(f"Validação - Perda: {val_loss}, Acurácia: {val_accuracy}")
+    cnn.save('model/model.keras')
 
 start = time.time()
 
-# Carregar os diretórios e nomes das classes
-files = Files('db/images')
-files.load_names()
-classes_name = files.names
+imgW, imgH = 100, 100
+path = 'db/images'
 
-# Treinamento para cada classe
-for class_name in classes_name:
-    train_dir = f"db/images/train/{class_name}"
-    val_dir = f"db/images/validation/{class_name}"
-
-    # Parâmetros do treinamento
-    img_height, img_width = 150, 150
-    batch_size = 18  # Ajuste de batch size
-
-    print(f'Treinando Modelo Binário para {class_name}...')
-    train_ai(class_name, train_dir, val_dir, batch_size, img_height, img_width)
+train_ai(path, imgW, imgH, 24, 10)
 
 end = time.time()
 length = end - start

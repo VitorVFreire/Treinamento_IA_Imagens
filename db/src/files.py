@@ -19,7 +19,7 @@ class Files():
         self.files = []
         self.max_number = 0
         self.names = []
-        self.folders = ['train', 'validation']
+        self.folders = ['train', 'test']
         self.files_by_folder = {}
         self.img_height = 150
         self.img_width = 150
@@ -93,11 +93,12 @@ class Files():
         for folder in self.folders:
             folder_path = os.path.join(self.path, folder)
             # Verifica se o diretório existe
+            print(folder_path)
             if os.path.isdir(folder_path):
                 # Lista as subpastas dentro de 'train' e 'validation' (nomes das classes)
                 for class_name in os.listdir(folder_path):
                     class_path = os.path.join(folder_path, class_name)
-                    if os.path.isdir(class_path) and not 'no_' in class_path and self.names.count(class_name) == 0:  # Verifica se é realmente um diretório
+                    if os.path.isdir(class_path) and self.names.count(class_name) == 0:  # Verifica se é realmente um diretório
                         self.names.append(class_name)
 
     def load_files_and_paths(self):
@@ -281,7 +282,7 @@ class Files():
 
         print("Flipando Arquivos...")
         self.load_files_and_paths()
-        self.flip_images()'''
+        self.flip_images()
 
         print("Removendo Arquivos Duplicados...")
         self.load_names()
@@ -295,6 +296,6 @@ class Files():
                     files.extend(self.load_files_by_folder(path))
                 count_deleted += self.remove_duplicates(files)
 
-        print(f'{count_deleted} Arquivos Deletados!')
+        print(f'{count_deleted} Arquivos Deletados!')'''
 
         print("Processamento concluído!")    

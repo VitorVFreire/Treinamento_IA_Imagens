@@ -4,29 +4,28 @@ import numpy as np
 from db import Files
 from PIL import Image, UnidentifiedImageError
 import matplotlib.pyplot as plt
+from numpy import expand_dims, argmax
 
-img_height, img_width = 150, 150
+img_height, img_width = 100, 100
 
 # Função para prever uma imagem
-def predict_image(class_name, image_path, model, img_height, img_width):
+def predict_image(image_path, model, img_height, img_width):
     img = load_img(image_path, target_size=(img_height, img_width))
     img_array = img_to_array(img) / 255.0  # Normalizar
     img_array = np.expand_dims(img_array, axis=0)
 
-    prediction = model.predict(img_array)
-    print(f'{image_path} - {class_name}: {prediction[0]}')
-
-    if prediction[0] >= 0.5:
-        return class_name, prediction[0], True
-    else:
-        return f"no_{class_name}", prediction[0], False
+    # Corrigido: usar img_to_array para converter a imagem corretamente
+    y = model.predict(np.expand_dims(img_to_array(img), axis=0))
+    return argmax(y)
 
 # Carregar as classes
 classes_names = Files('db/images')
 classes_names.load_names()
+classes_names.names.sort()
+classes_names = classes_names.names
 
 # Carregar os modelos
-models = {class_name: load_model(f'model/{class_name}_binary_best.keras') for class_name in classes_names.names}
+model = load_model('model/model.keras')
 
 # Processar imagens
 files = Files('app/images')
@@ -39,16 +38,11 @@ for path_file in files.files:
     try:
         # Carregar e classificar a imagem
         im = Image.open(path_file)
-        final_label = 'Not Found'
-        for class_name in classes_names.names:
-            label, confidence, result_predict = predict_image(class_name, path_file, models[class_name], img_height, img_width)
-            if result_predict:
-                final_label = label
-                break
+        indice = predict_image(path_file, model, img_height, img_width)
 
         # Armazenar a imagem e seu rótulo
         images.append(im)
-        labels.append(final_label)
+        labels.append(classes_names[indice])
     except UnidentifiedImageError:
         print(f"Erro: {path_file} não é uma imagem válida.")
     except Exception as e:
@@ -71,4 +65,3 @@ if images:
     plt.show()
 else:
     print("Nenhuma imagem válida foi processada.")
-

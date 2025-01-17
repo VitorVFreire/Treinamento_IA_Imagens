@@ -82,7 +82,7 @@ class ImageProcessor():
         num_train = self.num_images - num_validation  # Restante para train
 
         # Lista aleatória de destinos balanceados
-        destinations = ['validation'] * num_validation + ['train'] * num_train
+        destinations = ['test'] * num_validation + ['train'] * num_train
         random.shuffle(destinations)
 
         for i, start in enumerate(range(start_position, start_position + self.num_images, 10)):
@@ -95,7 +95,7 @@ class ImageProcessor():
 
             # Define o destino balanceado
             destination = destinations[idx]
-            base_path = f'{self.base_path}/{destination}/{parametro}/{parametro}'
+            base_path = f'{self.base_path}/{destination}/{parametro}'
             os.makedirs(base_path, mode=0o777, exist_ok=True)
 
             file_path = os.path.join(base_path, f"{parametro}_{idx + start_position}.jpg")
