@@ -18,7 +18,7 @@ def categorical(path, imgW, imgH, batch_size, epochs, model_name):
 
     classes = list(train.class_indices.keys())
 
-    cnn = Sequential()
+    cnn = Sequential() 
 
     cnn.add(Conv2D(
             32, (3, 3), input_shape = (imgW, imgH, 3),
