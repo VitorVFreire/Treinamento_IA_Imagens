@@ -10,13 +10,14 @@ if __name__ == '__main__':
     key = os.getenv('API_KEY')
 
     # Parâmetros de busca
-    parametros = ['cat', 'dog', 'horse', 'fish']
+    parametros = ['Toyota Corolla', 'Hyundai HB20', 'Hyundai Creta', 'Fiat Uno', 'Chevrolet Corsa']
+    aux_query = 'exterior view of '
     
     base_path = os.path.join('db', 'images')
 
     # Inicializar o processador de imagens
-    image_processor = ImageProcessor(cx, key, base_path, parametros, num_images=500)
+    image_processor = ImageProcessor(cx, key, base_path, parametros, aux_query, num_images=200)
     image_processor.run()
 
-    #files = Files(base_path)
-    #files.run()
+    files = Files(base_path, ['train', 'test'])
+    files.run()

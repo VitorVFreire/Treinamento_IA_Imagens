@@ -4,31 +4,37 @@ import numpy as np
 from db import Files
 from PIL import Image, UnidentifiedImageError
 import matplotlib.pyplot as plt
-from numpy import expand_dims, argmax
 
-img_height, img_width = 100, 100
+img_height, img_width = 360, 360
 
 # Função para prever uma imagem
-def predict_image(image_path, model, img_height, img_width):
+def predict_image(image_path, model, img_height, img_width, class_names, confidence_threshold=0.7):
     img = load_img(image_path, target_size=(img_height, img_width))
     img_array = img_to_array(img) / 255.0  # Normalizar
     img_array = np.expand_dims(img_array, axis=0)
 
-    # Corrigido: usar img_to_array para converter a imagem corretamente
-    y = model.predict(np.expand_dims(img_to_array(img), axis=0))
-    return argmax(y)
+    # Realizar a previsão
+    predictions = model.predict(img_array)
+    predicted_confidence = np.max(predictions)  # Confiança da classe mais provável
+    predicted_class = np.argmax(predictions)  # Índice da classe mais provável
+
+    # Verificar se a confiança atinge o limiar
+    if predicted_confidence >= confidence_threshold:
+        return class_names[predicted_class]
+    else:
+        return "não identificado"
 
 # Carregar as classes
-classes_names = Files('db/images')
-classes_names.load_names()
-classes_names.names.sort()
-classes_names = classes_names.names
+class_names = Files('db/images')
+class_names.load_names()
+class_names.names.sort()
+class_names = class_names.names
 
 # Carregar os modelos
 model = load_model('model/model.keras')
 
 # Processar imagens
-files = Files('app/images')
+files = Files('app/images', ['train', 'test'])
 files.get_only_files()
 
 images = []
@@ -38,11 +44,11 @@ for path_file in files.files:
     try:
         # Carregar e classificar a imagem
         im = Image.open(path_file)
-        indice = predict_image(path_file, model, img_height, img_width)
+        resultado = predict_image(path_file, model, img_height, img_width, class_names, confidence_threshold=0.7)
 
         # Armazenar a imagem e seu rótulo
         images.append(im)
-        labels.append(classes_names[indice])
+        labels.append(resultado)
     except UnidentifiedImageError:
         print(f"Erro: {path_file} não é uma imagem válida.")
     except Exception as e:

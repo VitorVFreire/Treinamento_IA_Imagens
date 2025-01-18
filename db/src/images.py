@@ -3,19 +3,18 @@ import random
 import re
 import threading
 import requests
-from dotenv import load_dotenv
 from PIL import Image
 from io import BytesIO
 
 
 class ImageProcessor():
-    def __init__(self, cx, key, base_path, parametros, num_images=10):
+    def __init__(self, cx, key, base_path, parametros, aux_query, num_images=10):
         self.cx = cx
         self.key = key
         self.base_path = base_path
         self.parametros = parametros
         self.num_images = num_images
-        self.paths = ['train', 'validation']
+        self.aux_query = aux_query
 
     def list_imagens_saved(self):
         """Lista a maior imagem salva para cada tipo de animal"""
@@ -43,7 +42,7 @@ class ImageProcessor():
         """Busca imagens no Google usando a API Custom Search"""
         search_url = "https://www.googleapis.com/customsearch/v1"
         params = {
-            "q": query,
+            "q": f'{self.aux_query}{query}',
             "cx": self.cx,
             "key": self.key,
             "searchType": "image",
