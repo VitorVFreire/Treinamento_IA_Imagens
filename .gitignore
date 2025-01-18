@@ -5,4 +5,5 @@ app/images/*
 model/*
 !.gitkeep
 images/
-__pycache__
+db/images_db.json
+__pycache__/

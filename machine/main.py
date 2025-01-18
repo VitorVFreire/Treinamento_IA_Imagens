@@ -5,11 +5,11 @@ import time
 start = time.time()
 
 path = 'db/images'
-imgW, imgH = 240, 240
-batch_size = 32
-epochs = 20
+imgW, imgH = 50, 50
+batch_size = 64
+epochs = 10
 model_name = 'model/model.keras'
-mode = 'binary'
+mode = 'categorical'
 
 class_names = Files('db/images', ['train', 'test'])
 class_names.load_names()

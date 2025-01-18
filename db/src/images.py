@@ -8,35 +8,14 @@ from io import BytesIO
 
 
 class ImageProcessor():
-    def __init__(self, cx, key, base_path, parametros, aux_query, num_images=10):
+    def __init__(self, cx, key, base_path, parametros, aux_query, count_images_saved:dict, num_images=10):
         self.cx = cx
         self.key = key
         self.base_path = base_path
         self.parametros = parametros
         self.num_images = num_images
         self.aux_query = aux_query
-
-    def list_imagens_saved(self):
-        """Lista a maior imagem salva para cada tipo de animal"""
-        arquivos = []
-        caminhos = [os.path.join(self.base_path, nome) for nome in os.listdir(self.base_path)]
-        
-        for caminho in caminhos:
-            # Ignora arquivos .gitkeep e continua com diretórios
-            if os.path.isdir(caminho):  # Garante que é um diretório
-                arquivos.extend([nome for nome in os.listdir(caminho) if nome != '.gitkeep'])
-
-        maior_por_animal = {}
-        regex = re.compile(r'(\w+)_(\d+)\.jpg')
-
-        for arquivo in arquivos:
-            match = regex.match(arquivo)
-            if match:
-                animal, numero = match.groups()
-                numero = int(numero)
-                if animal not in maior_por_animal or numero > maior_por_animal[animal]:
-                    maior_por_animal[animal] = numero
-        return maior_por_animal
+        self.count_images_saved = count_images_saved
 
     def search_google_images(self, query, start):
         """Busca imagens no Google usando a API Custom Search"""
@@ -107,11 +86,9 @@ class ImageProcessor():
 
     def run(self):
         """Inicia o processo de busca e download de imagens para todos os parâmetros"""
-        maior_por_animal = self.list_imagens_saved()
-
         search_threads = []
         for parametro in self.parametros:
-            start_position = maior_por_animal.get(parametro, 1)
+            start_position = self.count_images_saved.get(parametro, 1)
             thread = threading.Thread(target=self.process_images, args=(parametro, start_position))
             search_threads.append(thread)
             thread.start()
